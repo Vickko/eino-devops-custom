@@ -39,18 +39,19 @@ func recoverMiddleware(next http.Handler) http.Handler {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		method := r.Method
+		// 设置 CORS 头,允许所有来源和方法
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS,DELETE,PUT")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,X-CSRF-Token, Authorization")
-		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type, New-Token, New-Expires-At")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Expose-Headers", "*")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 
-		// 放行所有OPTIONS方法
-		if method == "OPTIONS" {
+		// 处理 OPTIONS 预检请求
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }

@@ -28,6 +28,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/cloudwego/eino-ext/devops/internal/model"
 	"github.com/cloudwego/eino-ext/devops/internal/utils/log"
 )
 
@@ -37,13 +38,15 @@ var (
 )
 
 // StartHTTPServer init http sever use the specified port.
-func StartHTTPServer(_ context.Context, port string) error {
-	log.Infof("start debug http server at port=%s", port)
+func StartHTTPServer(_ context.Context, opt *model.DevOpt) error {
+	log.Infof("start debug http server at port=%s", opt.DevServerPort)
 	var err error
 	startOnce.Do(func() {
 		r := mux.NewRouter()
 		registerRoutes(r)
-		err = http.ListenAndServe(":"+port, r)
+		registerCustomHandlers(r, opt.Handlers)
+		// corsMiddleware 包在 mux 外层，确保 OPTIONS 请求在路由匹配前被处理
+		err = http.ListenAndServe(":"+opt.DevServerPort, corsMiddleware(recoverMiddleware(r)))
 		if err != nil {
 			log.Errorf("start debug http server failed, err=%v", err)
 		}
@@ -57,8 +60,6 @@ func registerRoutes(r *mux.Router) {
 		debugBiz = "/debug/v1"
 	)
 
-	r.Use(recoverMiddleware, corsMiddleware)
-
 	rootR := r.PathPrefix(root).Subrouter()
 	rootR.Path("/ping").HandlerFunc(Ping).Methods(http.MethodGet)
 	rootR.Path("/stream_log").HandlerFunc(StreamLog).Methods(http.MethodGet)
@@ -71,6 +72,12 @@ func registerRoutes(r *mux.Router) {
 	debugR.Path("/graphs/{graph_id}/canvas").HandlerFunc(GetCanvasInfo).Methods(http.MethodGet)
 	debugR.Path("/graphs/{graph_id}/threads").HandlerFunc(CreateDebugThread).Methods(http.MethodPost)
 	debugR.Path("/graphs/{graph_id}/threads/{thread_id}/stream").HandlerFunc(StreamDebugRun).Methods(http.MethodPost)
+}
+
+func registerCustomHandlers(r *mux.Router, handlers []model.HandlerMount) {
+	for _, h := range handlers {
+		r.PathPrefix(h.Prefix).Handler(http.StripPrefix(h.Prefix, h.Handler))
+	}
 }
 
 type HTTPResp struct {

@@ -17,6 +17,7 @@
 package devops
 
 import (
+	"net/http"
 	"reflect"
 
 	"github.com/cloudwego/eino-ext/devops/internal/model"
@@ -44,6 +45,23 @@ func AppendType(value any) model.DevOption {
 		o.GoTypes = append(o.GoTypes, model.RegisteredType{
 			Identifier: rt.String(),
 			Type:       rt,
+		})
+	}
+}
+
+// WithHandler mounts a custom http.Handler at the specified prefix path.
+// This allows serving additional routes on the same port as the devops server.
+//
+// Example:
+//
+//	myRoutes := mux.NewRouter()
+//	myRoutes.HandleFunc("/users", listUsers).Methods("GET")
+//	devops.Init(ctx, devops.WithHandler("/my-api", myRoutes))
+func WithHandler(prefix string, handler http.Handler) model.DevOption {
+	return func(o *model.DevOpt) {
+		o.Handlers = append(o.Handlers, model.HandlerMount{
+			Prefix:  prefix,
+			Handler: handler,
 		})
 	}
 }

@@ -32,7 +32,7 @@ func Init(ctx context.Context, opts ...model.DevOption) error {
 
 	errCh := make(chan error)
 	safego.Go(ctx, func() {
-		errCh <- apihandler.StartHTTPServer(ctx, opt.DevServerPort)
+		errCh <- apihandler.StartHTTPServer(ctx, opt)
 	})
 
 	select {

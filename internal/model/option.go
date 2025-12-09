@@ -16,13 +16,22 @@
 
 package model
 
+import "net/http"
+
 const (
 	defaultHttpPort = "52538"
 )
 
+// HandlerMount represents a custom http.Handler to be mounted at a prefix path.
+type HandlerMount struct {
+	Prefix  string
+	Handler http.Handler
+}
+
 type DevOpt struct {
 	DevServerPort string
 	GoTypes       []RegisteredType
+	Handlers      []HandlerMount
 }
 
 type DevOption func(*DevOpt)
